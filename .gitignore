@@ -1,3 +1,6 @@
+# Nix directories and binary files
+.direnv/
+
 # Build directories and binary files
 build/
 out/
