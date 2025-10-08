@@ -7,8 +7,10 @@ mkShell {
   packages = with pkgs; [
     gcc
     clang
+    llvmPackages_19.bintools
     gdb
     cmake
+    ninja
     cudatoolkit
     doxygen
     ccache
