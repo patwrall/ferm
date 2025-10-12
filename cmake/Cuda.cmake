@@ -45,4 +45,8 @@ macro(ferm_target_link_cuda target)
         "Compiling CUDA on Windows outside the Visual Studio Command prompt or without running `vcvarsall.bat x64` probably fails"
     )
   endif()
+
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES "native")
+  endif()
 endmacro()

@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.21)
 # manual dependency management
 
 # Only set the cxx_standard if it is not set by someone else
-if (NOT DEFINED CMAKE_CXX_STANDARD)
+if(NOT DEFINED CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 23)
 endif()
 
@@ -25,12 +25,13 @@ project(
 include(cmake/PreventInSourceBuilds.cmake)
 include(ProjectOptions.cmake)
 
-
 ferm_setup_options()
 
 ferm_global_options()
 include(Dependencies.cmake)
 ferm_setup_dependencies()
+
+include(cmake/Cuda.cmake)
 
 ferm_local_options()
 
@@ -73,10 +74,9 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-
 if(ferm_BUILD_FUZZ_TESTS)
   message(AUTHOR_WARNING "Building Fuzz Tests, using fuzzing sanitizer https://www.llvm.org/docs/LibFuzzer.html")
-  if (NOT ferm_ENABLE_SANITIZER_ADDRESS AND NOT ferm_ENABLE_SANITIZER_THREAD)
+  if(NOT ferm_ENABLE_SANITIZER_ADDRESS AND NOT ferm_ENABLE_SANITIZER_THREAD)
     message(WARNING "You need asan or tsan enabled for meaningful fuzz testing")
   endif()
   add_subdirectory(fuzz_test)
