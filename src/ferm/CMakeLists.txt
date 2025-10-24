@@ -1,6 +1,6 @@
 include(GenerateExportHeader)
 
-add_library(ferm cuda/mc.cu)
+add_library(ferm kernels/european_call.cu)
 
 add_library(ferm::ferm ALIAS ferm)
 

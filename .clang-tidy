@@ -6,8 +6,8 @@ Checks: "*,
         -fuchsia-*,
         -google-*,
         -llvm*,
-        -modernize-use-trailing-return-type,
         -zircon-*,
+        -modernize-use-trailing-return-type,
         -readability-else-after-return,
         -readability-static-accessed-through-instance,
         -readability-avoid-const-params-in-decls,
@@ -15,19 +15,21 @@ Checks: "*,
         -misc-non-private-member-variables-in-classes,
         -misc-no-recursion,
         -misc-use-anonymous-namespace,
-        -misc-use-internal-linkage
+        -misc-use-internal-linkage,
+        -cppcoreguidelines-pro-bounds-pointer-arithmetic
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
-FormatStyle:     none
+FormatStyle: none
 
 CheckOptions:
-  - key: readability-identifier-length.IgnoredVariableNames
-    value: 'x|y|z'
-  - key: readability-identifier-length.IgnoredParameterNames
-    value: 'x|y|z'
-
-
-
-
-
+  - key: portability-easily-swappable-parameters.MinimumParameters
+    value: 10
+   - key: readability-identifier-length.MinimumVariableNameLength
+    value: 1
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: 1
+  - key: readability-identifier-length.MinimumLoopCounterNameLength
+    value: 1
+  - key: readability-identifier-length.MinimumExceptionNameLength
+    value: 1
