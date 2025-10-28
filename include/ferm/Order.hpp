@@ -3,9 +3,7 @@
 
 #include <cmath>
 #include <cstdint>
-#include <memory>
 #include <stdexcept>
-#include <vector>
 
 enum class Side : uint8_t { BUY, SELL };
 
@@ -18,20 +16,28 @@ public:
   using PriceType = std::int64_t;
   using SizeType = std::int64_t;
 
-  Order(OrderType type, OrderId id, Side side, PriceType price, SizeType intial_size, SizeType current_size)
-    : type_{ type }, id_{ id }, side_{ side }, price_{ price }, initial_size_{ intial_size },
-      current_size_{ current_size }
-  {}
+  static constexpr PriceType PRICE_NA = std::numeric_limits<PriceType>::min();
 
-  OrderType getType() const { return type_; }
-  OrderId getId() const { return id_; }
-  Side getSide() const { return side_; }
-  PriceType getPrice() const { return price_; }
-  SizeType getInitialSize() const { return initial_size_; }
-  SizeType getCurrentSize() const { return current_size_; }
-  bool isFilelled() const { return current_size_ == 0; }
+  Order(OrderType type, OrderId id, Side side, PriceType price, SizeType intial_size)
+    : type_{ type }, id_{ id }, side_{ side }, price_{ price }, initial_size_{ intial_size },
+      current_size_{ initial_size_ }
+  {
+    if (initial_size_ <= 0) throw std::runtime_error("Initial size must be positive");
+    if (type == OrderType::LIMIT && price < 00) throw std::runtime_error("Limit order price must be non-negative");
+    if (type == OrderType::MARKET) price = PRICE_NA;
+  }
+
+  [[nodiscard]] OrderType getType() const noexcept { return type_; }
+  [[nodiscard]] OrderId getId() const noexcept { return id_; }
+  [[nodiscard]] Side getSide() const noexcept { return side_; }
+  [[nodiscard]] PriceType getPrice() const noexcept { return price_; }
+  [[nodiscard]] SizeType getInitialSize() const noexcept { return initial_size_; }
+  [[nodiscard]] SizeType getCurrentSize() const noexcept { return current_size_; }
+  [[nodiscard]] bool isFilled() const noexcept { return current_size_ == 0; }
+
   void fill(SizeType size)
   {
+    if (size <= 0) throw std::runtime_error("Fill size must be positive");
     if (size > getCurrentSize()) { throw std::runtime_error("Fill size exceeds current size"); }
 
     current_size_ -= size;
@@ -45,8 +51,5 @@ private:
   SizeType initial_size_;
   SizeType current_size_;
 };
-
-using OrderPtr = std::unique_ptr<Order>;
-using OrderList = std::vector<Order *>;
 
 #endif

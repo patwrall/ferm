@@ -4,8 +4,6 @@ add_library(ferm OrderBook.cpp)
 
 add_library(ferm::ferm ALIAS ferm)
 
-ferm_target_link_cuda(ferm)
-
 target_link_libraries(ferm PRIVATE ferm_options ferm_warnings)
 
 target_include_directories(ferm ${WARNING_GUARD} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
