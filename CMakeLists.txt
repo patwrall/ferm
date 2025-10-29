@@ -35,6 +35,9 @@ include(cmake/Cuda.cmake)
 
 ferm_local_options()
 
+unset(CMAKE_CXX_CLANG_TIDY CACHE)
+set(CMAKE_CXX_CLANG_TIDY "")
+
 # don't know if this should be set globally from here or not...
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 

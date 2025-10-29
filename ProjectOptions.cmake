@@ -3,9 +3,7 @@ include(cmake/LibFuzzer.cmake)
 include(CMakeDependentOption)
 include(CheckCXXCompilerFlag)
 
-
 include(CheckCXXSourceCompiles)
-
 
 macro(ferm_supports_sanitizers)
   if((CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*" OR CMAKE_CXX_COMPILER_ID MATCHES ".*GNU.*") AND NOT WIN32)
@@ -32,7 +30,7 @@ macro(ferm_supports_sanitizers)
   if((CMAKE_CXX_COMPILER_ID MATCHES ".*Clang.*" OR CMAKE_CXX_COMPILER_ID MATCHES ".*GNU.*") AND WIN32)
     set(SUPPORTS_ASAN OFF)
   else()
-    if (NOT WIN32)
+    if(NOT WIN32)
       message(STATUS "Sanity checking AddressSanitizer, it should be supported on this platform")
       set(TEST_PROGRAM "int main() { return 0; }")
 
@@ -81,7 +79,7 @@ macro(ferm_setup_options)
     option(ferm_ENABLE_PCH "Enable precompiled headers" OFF)
     option(ferm_ENABLE_CACHE "Enable ccache" OFF)
   else()
-    option(ferm_ENABLE_IPO "Enable IPO/LTO" ON)
+    option(ferm_ENABLE_IPO "Enable IPO/LTO" OFF)
     option(ferm_WARNINGS_AS_ERRORS "Treat Warnings As Errors" ON)
     option(ferm_ENABLE_USER_LINKER "Enable user-selected linker" OFF)
     option(ferm_ENABLE_SANITIZER_ADDRESS "Enable address sanitizer" ${SUPPORTS_ASAN})
@@ -115,7 +113,10 @@ macro(ferm_setup_options)
   endif()
 
   ferm_check_libfuzzer_support(LIBFUZZER_SUPPORTED)
-  if(LIBFUZZER_SUPPORTED AND (ferm_ENABLE_SANITIZER_ADDRESS OR ferm_ENABLE_SANITIZER_THREAD OR ferm_ENABLE_SANITIZER_UNDEFINED))
+  if(LIBFUZZER_SUPPORTED
+     AND (ferm_ENABLE_SANITIZER_ADDRESS
+          OR ferm_ENABLE_SANITIZER_THREAD
+          OR ferm_ENABLE_SANITIZER_UNDEFINED))
     set(DEFAULT_FUZZER ON)
   else()
     set(DEFAULT_FUZZER OFF)
@@ -135,7 +136,7 @@ macro(ferm_global_options)
 
   if(ferm_ENABLE_HARDENING AND ferm_ENABLE_GLOBAL_HARDENING)
     include(cmake/Hardening.cmake)
-    if(NOT SUPPORTS_UBSAN 
+    if(NOT SUPPORTS_UBSAN
        OR ferm_ENABLE_SANITIZER_UNDEFINED
        OR ferm_ENABLE_SANITIZER_ADDRESS
        OR ferm_ENABLE_SANITIZER_THREAD
@@ -221,7 +222,7 @@ macro(ferm_local_options)
 
   if(ferm_ENABLE_HARDENING AND NOT ferm_ENABLE_GLOBAL_HARDENING)
     include(cmake/Hardening.cmake)
-    if(NOT SUPPORTS_UBSAN 
+    if(NOT SUPPORTS_UBSAN
        OR ferm_ENABLE_SANITIZER_UNDEFINED
        OR ferm_ENABLE_SANITIZER_ADDRESS
        OR ferm_ENABLE_SANITIZER_THREAD

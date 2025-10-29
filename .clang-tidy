@@ -1,31 +1,11 @@
----
-Checks: "*,
-        -abseil-*,
-        -altera-*,
-        -android-*,
-        -fuchsia-*,
-        -google-*,
-        -llvm*,
-        -zircon-*,
-        -modernize-use-trailing-return-type,
-        -readability-else-after-return,
-        -readability-static-accessed-through-instance,
-        -readability-avoid-const-params-in-decls,
-        -cppcoreguidelines-non-private-member-variables-in-classes,
-        -misc-non-private-member-variables-in-classes,
-        -misc-no-recursion,
-        -misc-use-anonymous-namespace,
-        -misc-use-internal-linkage,
-        -cppcoreguidelines-pro-bounds-pointer-arithmetic
-"
+Checks: "*, -abseil-*, -altera-*, -android-*, -fuchsia-*, -google-*, -llvm*, -zircon-*, -modernize-use-trailing-return-type, -readability-else-after-return, -readability-static-accessed-through-instance, -readability-avoid-const-params-in-decls, -cppcoreguidelines-non-private-member-variables-in-classes, -misc-non-private-member-variables-in-classes, -misc-no-recursion, -misc-use-anonymous-namespace, -misc-use-internal-linkage, -cppcoreguidelines-pro-bounds-pointer-arithmetic, -misc-include-cleaner, -clang-diagnostic-error"
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 FormatStyle: none
-
 CheckOptions:
   - key: portability-easily-swappable-parameters.MinimumParameters
     value: 10
-   - key: readability-identifier-length.MinimumVariableNameLength
+  - key: readability-identifier-length.MinimumVariableNameLength
     value: 1
   - key: readability-identifier-length.MinimumParameterNameLength
     value: 1
