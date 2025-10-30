@@ -1,55 +1,55 @@
 #ifndef ORDER_HPP
 #define ORDER_HPP
 
+#include "OrderType.hpp"
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
 
 enum class Side : uint8_t { BUY, SELL };
 
-enum class OrderType : uint8_t { LIMIT, MARKET };
-
 class Order
 {
 public:
-  using OrderId = std::int64_t;
-  using PriceType = std::int64_t;
-  using SizeType = std::int64_t;
+  using price_t = std::int64_t;
+  using quantity_t = std::int64_t;
+  using id_t = std::uint64_t;
 
-  static constexpr PriceType PRICE_NA = std::numeric_limits<PriceType>::min();
+  static constexpr price_t PRICE_NA = std::numeric_limits<price_t>::min();
 
-  Order(OrderType type, OrderId id, Side side, PriceType price, SizeType intial_size)
-    : type_{ type }, id_{ id }, side_{ side }, price_{ price }, initial_size_{ intial_size },
-      current_size_{ initial_size_ }
+  Order(OrderType type, id_t id, Side side, price_t price, quantity_t initial_size)
+    : type_{ type }, id_{ id }, side_{ side }, price_{ price }, initial_quantity_{ initial_size },
+      current_quantity_{ initial_quantity_ }
   {
-    if (initial_size_ <= 0) throw std::runtime_error("Initial size must be positive");
-    if (type == OrderType::LIMIT && price < 00) throw std::runtime_error("Limit order price must be non-negative");
-    if (type == OrderType::MARKET) price = PRICE_NA;
+    if (initial_quantity_ <= 0) { throw std::runtime_error("Initial size must be positive"); }
+    if (type == OrderType::LIMIT && price_ < 0) { throw std::runtime_error("Limit order price must be non-negative"); }
+    if (type == OrderType::MARKET) { price_ = PRICE_NA; }
   }
 
   [[nodiscard]] OrderType getType() const noexcept { return type_; }
-  [[nodiscard]] OrderId getId() const noexcept { return id_; }
+  [[nodiscard]] id_t getId() const noexcept { return id_; }
   [[nodiscard]] Side getSide() const noexcept { return side_; }
-  [[nodiscard]] PriceType getPrice() const noexcept { return price_; }
-  [[nodiscard]] SizeType getInitialSize() const noexcept { return initial_size_; }
-  [[nodiscard]] SizeType getCurrentSize() const noexcept { return current_size_; }
-  [[nodiscard]] bool isFilled() const noexcept { return current_size_ == 0; }
+  [[nodiscard]] price_t getPrice() const noexcept { return price_; }
+  [[nodiscard]] quantity_t getInitialSize() const noexcept { return initial_quantity_; }
+  [[nodiscard]] quantity_t getCurrentSize() const noexcept { return current_quantity_; }
+  [[nodiscard]] bool isFilled() const noexcept { return current_quantity_ == 0; }
 
-  void fill(SizeType size)
+  void fill(quantity_t size)
   {
-    if (size <= 0) throw std::runtime_error("Fill size must be positive");
+    if (size <= 0) { throw std::runtime_error("Fill size must be positive"); }
     if (size > getCurrentSize()) { throw std::runtime_error("Fill size exceeds current size"); }
 
-    current_size_ -= size;
+    current_quantity_ -= size;
   }
 
 private:
   OrderType type_;
-  OrderId id_;
+  id_t id_;
   Side side_;
-  PriceType price_;
-  SizeType initial_size_;
-  SizeType current_size_;
+  price_t price_;
+  quantity_t initial_quantity_;
+  quantity_t current_quantity_;
 };
 
 #endif
