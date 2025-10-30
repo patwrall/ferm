@@ -5,6 +5,10 @@
 [![CodeQL](https://github.com/patwrall/ferm/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/patwrall/ferm/actions/workflows/codeql-analysis.yml)
 
 ## About ferm
+**F**inancial **E**ngine for **R**ealistic **M**icrostructure
+
+A GPU-accelerated limit order book simulator with Hawkes-driven order flow for
+quantitative trading research, execution studies, and RL training.
 
 
 

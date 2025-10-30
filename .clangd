@@ -1,6 +1,5 @@
 CompileFlags:
   Remove:
-    # Remove NVCC-specific flags that clangd doesn't understand
     - -forward-unknown-to-host-compiler
     - --forward-unknown-to-host-compiler
     - --generate-code-arch=*
