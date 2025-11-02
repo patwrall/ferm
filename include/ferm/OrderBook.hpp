@@ -9,20 +9,28 @@
 #include <unordered_map>
 #include <vector>
 
+// TODO: return events for logging, further processing etc
+
 class OrderBook
 {
 public:
-  // TODO: return events for logging, further processing etc
-  void addMarketOrder(Order &order);
-  void addLimitOrder(Order &order);
-  void cancel(Order::id_t order_id);
+  using order_idx_t = uint64_t;
+
+  struct Fill
+  {
+    order_idx_t order_idx;
+    Order::quantity_t quantity_executed;
+    Order::price_t fill_price;
+  };
+
+  void addOrder(const Order &order);
+
+  void cancel(Order::id_t id);
 
   [[nodiscard]] std::optional<Order> bestBid() const noexcept;
   [[nodiscard]] std::optional<Order> bestAsk() const noexcept;
 
 private:
-  using order_idx_t = uint64_t;
-
   class OrderPool
   {
   public:
@@ -56,7 +64,7 @@ private:
     std::deque<order_idx_t> order_idxs;
     Order::quantity_t total_quantity{ 0 };
 
-    void addOrder(const order_idx_t idx, const Order::quantity_t size)
+    void push(const order_idx_t idx, const Order::quantity_t size)
     {
       order_idxs.push_back(idx);
       total_quantity += size;
@@ -109,6 +117,8 @@ private:
     std::vector<Entry> entries_;
   };
 
+  std::vector<Fill> match(Side aggresor_side, Order::price_t aggresor_price, Order::quantity_t aggresor_size);
+
   using BidLadder = Ladder<std::greater<>>;
   using AskLadder = Ladder<std::less<>>;
 
@@ -116,14 +126,15 @@ private:
   AskLadder asks_;
   OrderPool order_pool_;
 
-  // used for cancel
+  // used for cancel;
+  // TODO: need to have better memory locality than this and eliminate indirections
   std::unordered_map<Order::id_t, order_idx_t> id_to_index_;
 };
 
 template<typename Comparator>
 typename OrderBook::PriceLevel &OrderBook::Ladder<Comparator>::levelFor(const Order::price_t price)
 {
-  auto compare = [this](const Entry &entry, const Order::price_t price) { return comp_(entry.price, price); };
+  auto compare = [this](const Entry &entry, const Order::price_t px) { return comp_(entry.price, px); };
 
   auto it = std::lower_bound(entries_.begin(), entries_.end(), price, compare);
 
@@ -136,7 +147,7 @@ typename OrderBook::PriceLevel &OrderBook::Ladder<Comparator>::levelFor(const Or
 template<typename Comparator>
 typename OrderBook::PriceLevel *OrderBook::Ladder<Comparator>::levelOf(const Order::price_t price)
 {
-  auto compare = [this](const Entry &entry, const Order::price_t price) { return comp_(entry.price, price); };
+  auto compare = [this](const Entry &entry, const Order::price_t px) { return comp_(entry.price, px); };
 
   auto it = std::lower_bound(entries_.begin(), entries_.end(), price, compare);
 
@@ -149,7 +160,7 @@ template<typename Comparator>
 [[nodiscard]] const typename OrderBook::PriceLevel *OrderBook::Ladder<Comparator>::levelOf(
   const Order::price_t price) const
 {
-  auto compare = [this](const Entry &entry, const Order::price_t price) { return comp_(entry.price, price); };
+  auto compare = [this](const Entry &entry, const Order::price_t px) { return comp_(entry.price, px); };
 
   auto it = std::lower_bound(entries_.begin(), entries_.end(), price, compare);
 
@@ -166,7 +177,7 @@ template<typename Comparator>
 
 template<typename Comparator> void OrderBook::Ladder<Comparator>::eraseIfEmpty(Order::price_t price)
 {
-  auto compare = [this](const Entry &entry, const Order::price_t price) { return comp_(entry.price, price); };
+  auto compare = [this](const Entry &entry, const Order::price_t px) { return comp_(entry.price, px); };
 
   auto it = std::lower_bound(entries_.begin(), entries_.end(), price, compare);
 
