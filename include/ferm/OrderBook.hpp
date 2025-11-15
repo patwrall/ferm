@@ -136,6 +136,7 @@ typename OrderBook::PriceLevel &OrderBook::Ladder<Comparator>::levelFor(const Or
 {
   auto compare = [this](const Entry &entry, const Order::price_t px) { return comp_(entry.price, px); };
 
+  // PERF: branchless bin search
   auto it = std::lower_bound(entries_.begin(), entries_.end(), price, compare);
 
   if (it != entries_.end() && it->price == price) { return it->level; }
@@ -149,6 +150,7 @@ typename OrderBook::PriceLevel *OrderBook::Ladder<Comparator>::levelOf(const Ord
 {
   auto compare = [this](const Entry &entry, const Order::price_t px) { return comp_(entry.price, px); };
 
+  // PERF: branchless bin search
   auto it = std::lower_bound(entries_.begin(), entries_.end(), price, compare);
 
   if (it != entries_.end() && it->price == price) { return &it->level; }
@@ -162,6 +164,7 @@ template<typename Comparator>
 {
   auto compare = [this](const Entry &entry, const Order::price_t px) { return comp_(entry.price, px); };
 
+  // PERF: branchless bin search
   auto it = std::lower_bound(entries_.begin(), entries_.end(), price, compare);
 
   if (it != entries_.end() && it->price == price) { return &it->level; }
@@ -179,6 +182,7 @@ template<typename Comparator> void OrderBook::Ladder<Comparator>::eraseIfEmpty(O
 {
   auto compare = [this](const Entry &entry, const Order::price_t px) { return comp_(entry.price, px); };
 
+  // PERF: branchless bin search
   auto it = std::lower_bound(entries_.begin(), entries_.end(), price, compare);
 
   if (it == entries_.end() || it->price != price) { return; }

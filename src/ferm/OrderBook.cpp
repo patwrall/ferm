@@ -48,6 +48,7 @@ std::vector<OrderBook::Fill>
   if (aggresor_size <= 0) { return fills; }
 
   auto walk_ladder = [&](auto &ladder) {
+    // TODO: walk ladders
     for (auto &entry : ladder.entries()) {}
   };
 
