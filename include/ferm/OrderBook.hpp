@@ -2,9 +2,11 @@
 #define ORDERBOOK_HPP
 
 #include "Order.hpp"
+#include "ferm/OrderType.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -16,11 +18,27 @@ class OrderBook
 public:
   using order_idx_t = uint64_t;
 
+  struct Aggressor
+  {
+    Side side;
+    Order::price_t price;// ignore on OrderType::Market
+    OrderType type;
+    Order::quantity_t size;
+    Order::id_t id;
+  };
+
+
   struct Fill
   {
     order_idx_t order_idx;
     Order::quantity_t quantity_executed;
     Order::price_t fill_price;
+  };
+
+  struct MatchResult
+  {
+    std::vector<Fill> fills;
+    Order::quantity_t qty_remaining;
   };
 
   void addOrder(const Order &order);
@@ -117,7 +135,7 @@ private:
     std::vector<Entry> entries_;
   };
 
-  std::vector<Fill> match(Side aggresor_side, Order::price_t aggresor_price, Order::quantity_t aggresor_size);
+  std::unique_ptr<MatchResult> &match(const Aggressor &a);
 
   using BidLadder = Ladder<std::greater<>>;
   using AskLadder = Ladder<std::less<>>;
@@ -126,8 +144,7 @@ private:
   AskLadder asks_;
   OrderPool order_pool_;
 
-  // used for cancel;
-  // TODO: need to have better memory locality than this and eliminate indirections
+  // TODO: terrible for gpu work; need to address thip ASAP
   std::unordered_map<Order::id_t, order_idx_t> id_to_index_;
 };
 

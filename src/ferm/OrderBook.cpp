@@ -1,4 +1,5 @@
 #include <ferm/OrderBook.hpp>
+#include <memory>
 #include <optional>
 
 OrderBook::order_idx_t OrderBook::OrderPool::add(const Order &order)
@@ -41,24 +42,26 @@ Order &OrderBook::OrderPool::get(const OrderBook::order_idx_t idx) { return orde
   return active_[idx];
 }
 
-std::vector<OrderBook::Fill>
-  OrderBook::match(Side aggresor_side, Order::price_t aggresor_price, Order::quantity_t aggresor_size)
+std::unique_ptr<OrderBook::MatchResult> &OrderBook::match(const Aggressor &a)
 {
   std::vector<OrderBook::Fill> fills;
-  if (aggresor_size <= 0) { return fills; }
+  std::unique_ptr<MatchResult> res =
+    std::make_unique<MatchResult>(MatchResult{ .fills = fills, .qty_remaining = static_cast<int>(a.size) });
+
+  if (a.size <= 0) { return res; }
 
   auto walk_ladder = [&](auto &ladder) {
     // TODO: walk ladders
     for (auto &entry : ladder.entries()) {}
   };
 
-  if (aggresor_side == Side::BUY) {
+  if (a.side == Side::BUY) {
     walk_ladder(asks_);
   } else {
     walk_ladder(bids_);
   }
 
-  return fills;
+  return res;
 }
 
 void OrderBook::addOrder(const Order &order)
@@ -80,7 +83,7 @@ void OrderBook::cancel(Order::id_t id) {}
 
 [[nodiscard]] std::optional<Order> OrderBook::bestBid() const noexcept
 {
-  const auto *const best_level = OrderBook::bids_.bestLevel();
+  const auto *const best_level = bids_.bestLevel();
   if (static_cast<bool>(best_level)) {
     if (!best_level->empty()) {
       auto first_order_idx = best_level->order_idxs.front();
@@ -95,7 +98,7 @@ void OrderBook::cancel(Order::id_t id) {}
 
 [[nodiscard]] std::optional<Order> OrderBook::bestAsk() const noexcept
 {
-  const auto *const best_level = OrderBook::asks_.bestLevel();
+  const auto *const best_level = asks_.bestLevel();
   if (static_cast<bool>(best_level)) {
     if (!best_level->empty()) {
       auto first_order_idx = best_level->order_idxs.front();
