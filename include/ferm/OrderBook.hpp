@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
-#include <memory>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -135,7 +134,7 @@ private:
     std::vector<Entry> entries_;
   };
 
-  std::unique_ptr<MatchResult> &match(const Aggressor &a);
+  MatchResult match(const Aggressor &a);
 
   using BidLadder = Ladder<std::greater<>>;
   using AskLadder = Ladder<std::less<>>;

@@ -1,112 +1,140 @@
 #include <ferm/OrderBook.hpp>
-#include <memory>
-#include <optional>
+#include <algorithm>
 
 OrderBook::order_idx_t OrderBook::OrderPool::add(const Order &order)
 {
-  if (orders_.size() >= ORDERS_CAPACITY) { throw std::overflow_error("OrderPool has reached maximum capacity"); }
-
-  if (!free_list_.empty()) {
-    const auto idx = free_list_.back();
-
-    free_list_.pop_back();
-    orders_[idx] = order;
-    active_[idx] = true;
-
-    return idx;
-  } else {
+    if (!free_list_.empty()) {
+        const auto idx = free_list_.back();
+        free_list_.pop_back();
+        orders_[idx] = order;
+        active_[idx] = true;
+        return idx;
+    }
+    if (orders_.size() >= ORDERS_CAPACITY)
+        throw std::overflow_error("OrderPool capacity exceeded");
     orders_.push_back(order);
     active_.push_back(true);
-
-    return orders_.size() - 1;
-  }
+    return static_cast<order_idx_t>(orders_.size() - 1);
 }
 
-void OrderBook::OrderPool::remove(OrderBook::order_idx_t idx)
+void OrderBook::OrderPool::remove(order_idx_t idx)
 {
-  if (idx >= orders_.size() || !active_[idx]) { throw std::out_of_range("Invalid order index for removal"); }
-
-  active_[idx] = false;
-
-  free_list_.push_back(idx);
+    active_[idx] = false;
+    free_list_.push_back(idx);
 }
 
-Order &OrderBook::OrderPool::get(const OrderBook::order_idx_t idx) { return orders_.at(idx); }
+Order &OrderBook::OrderPool::get(order_idx_t idx) { return orders_[idx]; }
+const Order &OrderBook::OrderPool::get(order_idx_t idx) const { return orders_[idx]; }
 
-[[nodiscard]] const Order &OrderBook::OrderPool::get(const OrderBook::order_idx_t idx) const { return orders_.at(idx); }
-
-[[nodiscard]] bool OrderBook::OrderPool::isActive(const OrderBook::order_idx_t idx) const noexcept
+bool OrderBook::OrderPool::isActive(order_idx_t idx) const noexcept
 {
-  if (idx >= orders_.size()) { return false; }
-
-  return active_[idx];
+    return idx < orders_.size() && active_[idx];
 }
 
-std::unique_ptr<OrderBook::MatchResult> &OrderBook::match(const Aggressor &a)
+OrderBook::MatchResult OrderBook::match(const Aggressor &a)
 {
-  std::vector<OrderBook::Fill> fills;
-  std::unique_ptr<MatchResult> res =
-    std::make_unique<MatchResult>(MatchResult{ .fills = fills, .qty_remaining = static_cast<int>(a.size) });
+    MatchResult res{ .qty_remaining = a.size };
+    res.fills.reserve(8);
 
-  if (a.size <= 0) { return res; }
+    const auto fill_against = [&](auto &ladder, auto crosses) {
+        while (res.qty_remaining > 0 && !ladder.empty()) {
+            const Order::price_t best_px = ladder.entries().front().price;
+            if (!crosses(best_px)) break;
+            auto *lvl = ladder.levelOf(best_px);
 
-  auto walk_ladder = [&](auto &ladder) {
-    // TODO: walk ladders
-    for (auto &entry : ladder.entries()) {}
-  };
+            while (res.qty_remaining > 0 && !lvl->empty()) {
+                const auto rest_idx = lvl->order_idxs.front();
+                auto &rest = order_pool_.get(rest_idx);
+                const auto qty = std::min(res.qty_remaining, rest.getCurrentSize());
 
-  if (a.side == Side::BUY) {
-    walk_ladder(asks_);
-  } else {
-    walk_ladder(bids_);
-  }
+                res.fills.push_back({ rest_idx, qty, best_px });
+                res.qty_remaining -= qty;
+                rest.fill(qty);
 
-  return res;
+                if (rest.isFilled()) {
+                    lvl->popFront(qty);
+                    id_to_index_.erase(rest.getId());
+                    order_pool_.remove(rest_idx);
+                } else {
+                    lvl->adjustDepth(-qty);
+                }
+            }
+
+            if (lvl->empty()) ladder.eraseIfEmpty(best_px);
+        }
+    };
+
+    if (a.side == Side::BUY)
+        fill_against(asks_, [&](Order::price_t px) {
+            return a.type == OrderType::MARKET || a.price >= px;
+        });
+    else
+        fill_against(bids_, [&](Order::price_t px) {
+            return a.type == OrderType::MARKET || a.price <= px;
+        });
+
+    return res;
 }
 
 void OrderBook::addOrder(const Order &order)
 {
-  switch (order.getType()) {
-  case OrderType::MARKET: {
-    break;
-  }
-  case OrderType::LIMIT: {
-    break;
-  }
-  default:
-    // error
-    break;
-  }
+    const auto idx = order_pool_.add(order);
+    id_to_index_[order.getId()] = idx;
+
+    auto res = match({ order.getSide(), order.getPrice(), order.getType(),
+                       order.getCurrentSize(), order.getId() });
+
+    const auto filled = order.getCurrentSize() - res.qty_remaining;
+    if (filled > 0) order_pool_.get(idx).fill(filled);
+
+    if (res.qty_remaining > 0 && order.getType() == OrderType::LIMIT) {
+        auto &lvl = (order.getSide() == Side::BUY)
+            ? bids_.levelFor(order.getPrice())
+            : asks_.levelFor(order.getPrice());
+        lvl.push(idx, res.qty_remaining);
+    } else {
+        order_pool_.remove(idx);
+        id_to_index_.erase(order.getId());
+    }
 }
 
-void OrderBook::cancel(Order::id_t id) {}
-
-[[nodiscard]] std::optional<Order> OrderBook::bestBid() const noexcept
+void OrderBook::cancel(Order::id_t id)
 {
-  const auto *const best_level = bids_.bestLevel();
-  if (static_cast<bool>(best_level)) {
-    if (!best_level->empty()) {
-      auto first_order_idx = best_level->order_idxs.front();
-      return OrderBook::order_pool_.get(first_order_idx);
-    }
+    const auto it = id_to_index_.find(id);
+    if (it == id_to_index_.end()) return;
 
-    return std::nullopt;
-  }
+    const auto idx = it->second;
+    const auto &order = order_pool_.get(idx);
+    const auto qty = order.getCurrentSize();
+    const auto px = order.getPrice();
 
-  return std::nullopt;
-};
+    const auto erase_from = [&](auto &ladder) {
+        auto *lvl = ladder.levelOf(px);
+        if (!lvl) return;
+        auto &deq = lvl->order_idxs;
+        if (const auto pos = std::find(deq.begin(), deq.end(), idx); pos != deq.end())
+            deq.erase(pos);
+        lvl->adjustDepth(-qty);
+        ladder.eraseIfEmpty(px);
+    };
 
-[[nodiscard]] std::optional<Order> OrderBook::bestAsk() const noexcept
+    if (order.getSide() == Side::BUY) erase_from(bids_);
+    else erase_from(asks_);
+
+    order_pool_.remove(idx);
+    id_to_index_.erase(it);
+}
+
+std::optional<Order> OrderBook::bestBid() const noexcept
 {
-  const auto *const best_level = asks_.bestLevel();
-  if (static_cast<bool>(best_level)) {
-    if (!best_level->empty()) {
-      auto first_order_idx = best_level->order_idxs.front();
-      return OrderBook::order_pool_.get(first_order_idx);
-    }
+    const auto *lvl = bids_.bestLevel();
+    if (!lvl || lvl->empty()) return std::nullopt;
+    return order_pool_.get(lvl->order_idxs.front());
+}
 
-    return std::nullopt;
-  }
-
-  return std::nullopt;
-};
+std::optional<Order> OrderBook::bestAsk() const noexcept
+{
+    const auto *lvl = asks_.bestLevel();
+    if (!lvl || lvl->empty()) return std::nullopt;
+    return order_pool_.get(lvl->order_idxs.front());
+}
