@@ -1,6 +1,7 @@
 #include <ferm/gpu_match.cuh>
 
-__global__ void match_kernel(
+__global__ __launch_bounds__(256)
+void match_kernel(
     GPUBook       * __restrict__ books,
     const int32_t * __restrict__ prices,
     const int32_t * __restrict__ qtys,
@@ -12,9 +13,9 @@ __global__ void match_kernel(
     if (id >= N) return;
 
     GPUBook      &book      = books[id];
-    int32_t       remaining = qtys[id];
-    const int32_t lim       = prices[id];
-    const bool    is_buy    = sides[id] > 0;
+    int32_t       remaining = __ldg(&qtys[id]);
+    const int32_t lim       = __ldg(&prices[id]);
+    const bool    is_buy    = __ldg(&sides[id]) > 0;
     const int     mid       = book.mid_tick;
 
     if (is_buy) {

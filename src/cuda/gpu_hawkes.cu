@@ -1,7 +1,8 @@
 #include <ferm/gpu_hawkes.cuh>
 #include <curand_kernel.h>
 
-__global__ void hawkes_kernel(
+__global__ __launch_bounds__(256)
+void hawkes_kernel(
     GPUBook            * __restrict__ books,
     const HawkesParams   p,
     float              * __restrict__ mid_paths,
@@ -10,10 +11,10 @@ __global__ void hawkes_kernel(
     const int id = blockIdx.x * blockDim.x + threadIdx.x;
     if (id >= N) return;
 
-    curandState rng;
-    curand_init(p.seed + static_cast<uint64_t>(id), 0, 0, &rng);
+    // Philox is faster to init than XORWOW and still high quality
+    curandStatePhilox4_32_10_t rng;
+    curand_init(p.seed, static_cast<uint64_t>(id), 0, &rng);
 
-    // bivariate Hawkes with exponential kernel, recursive intensity update
     float Rb  = 0.0f;
     float Ra  = 0.0f;
     int   mid = books[id].mid_tick;
@@ -23,7 +24,6 @@ __global__ void hawkes_kernel(
         const float la   = p.mu_ask + Ra;
         const float lmax = lb + la;
 
-        // thinning: sample candidate, decay, accept/reject
         const float dt    = -__logf(curand_uniform(&rng)) / lmax;
         const float decay = __expf(-p.beta * dt);
         Rb *= decay;
