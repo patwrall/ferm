@@ -47,6 +47,9 @@ public:
   [[nodiscard]] std::optional<Order> bestBid() const noexcept;
   [[nodiscard]] std::optional<Order> bestAsk() const noexcept;
 
+  [[nodiscard]] std::optional<double> midPrice() const noexcept;
+  [[nodiscard]] std::optional<Order::price_t> spread() const noexcept;
+
 private:
   class OrderPool
   {

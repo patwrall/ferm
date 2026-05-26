@@ -125,6 +125,22 @@ void OrderBook::cancel(Order::id_t id)
     id_to_index_.erase(it);
 }
 
+std::optional<double> OrderBook::midPrice() const noexcept
+{
+    const auto bid = bestBid();
+    const auto ask = bestAsk();
+    if (!bid || !ask) return std::nullopt;
+    return (bid->getPrice() + ask->getPrice()) / 2.0;
+}
+
+std::optional<Order::price_t> OrderBook::spread() const noexcept
+{
+    const auto bid = bestBid();
+    const auto ask = bestAsk();
+    if (!bid || !ask) return std::nullopt;
+    return ask->getPrice() - bid->getPrice();
+}
+
 std::optional<Order> OrderBook::bestBid() const noexcept
 {
     const auto *lvl = bids_.bestLevel();
