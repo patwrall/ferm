@@ -14,7 +14,7 @@ OrderBook::order_idx_t OrderBook::OrderPool::add(const Order &order)
         throw std::overflow_error("OrderPool capacity exceeded");
     orders_.push_back(order);
     active_.push_back(true);
-    return static_cast<order_idx_t>(orders_.size() - 1);
+    return orders_.size() - 1;
 }
 
 void OrderBook::OrderPool::remove(order_idx_t idx)
@@ -33,7 +33,7 @@ bool OrderBook::OrderPool::isActive(order_idx_t idx) const noexcept
 
 OrderBook::MatchResult OrderBook::match(const Aggressor &a)
 {
-    MatchResult res{ .qty_remaining = a.size };
+    MatchResult res{ .fills = {}, .qty_remaining = a.size };
     res.fills.reserve(8);
 
     const auto fill_against = [&](auto &ladder, auto crosses) {
@@ -130,7 +130,7 @@ std::optional<double> OrderBook::midPrice() const noexcept
     const auto bid = bestBid();
     const auto ask = bestAsk();
     if (!bid || !ask) return std::nullopt;
-    return (bid->getPrice() + ask->getPrice()) / 2.0;
+    return (static_cast<double>(bid->getPrice()) + static_cast<double>(ask->getPrice())) / 2.0;
 }
 
 std::optional<Order::price_t> OrderBook::spread() const noexcept

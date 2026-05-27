@@ -108,6 +108,7 @@ private:
   template<typename Comparator> class Ladder
   {
   public:
+    Ladder() : comp_{} {}
     explicit Ladder(Comparator comp) : comp_{ comp } {}
 
     // insert or find existing

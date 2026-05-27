@@ -20,7 +20,7 @@ project(
   VERSION 0.0.1
   DESCRIPTION ""
   HOMEPAGE_URL "https://github.com/patwrall/ferm"
-  LANGUAGES CXX C)
+  LANGUAGES CXX C CUDA)
 
 include(cmake/PreventInSourceBuilds.cmake)
 include(ProjectOptions.cmake)
@@ -63,6 +63,7 @@ add_subdirectory(configured_files)
 
 # Adding the src:
 add_subdirectory(src)
+add_subdirectory(bench)
 
 # Don't even look at tests if we're not top level
 if(NOT PROJECT_IS_TOP_LEVEL)
