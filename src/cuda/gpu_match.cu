@@ -18,6 +18,8 @@ void match_kernel(
     const bool    is_buy    = __ldg(&sides[id]) > 0;
     const int     mid       = book.mid_tick;
 
+    int new_mid = mid;
+
     if (is_buy) {
         for (int lvl = mid; lvl < mid + BOOK_LEVELS / 2 && remaining > 0; ++lvl) {
             if (lim >= 0 && lvl > lim) break;
@@ -27,6 +29,7 @@ void match_kernel(
             const int32_t take  = min(remaining, avail);
             book.ask[idx] -= take;
             remaining     -= take;
+            if (book.ask[idx] == 0) new_mid = lvl + 1;
         }
     } else {
         for (int lvl = mid; lvl > mid - BOOK_LEVELS / 2 && remaining > 0; --lvl) {
@@ -37,9 +40,11 @@ void match_kernel(
             const int32_t take  = min(remaining, avail);
             book.bid[idx] -= take;
             remaining     -= take;
+            if (book.bid[idx] == 0) new_mid = lvl - 1;
         }
     }
 
+    if (new_mid != mid) book.mid_tick = new_mid;
     fills[id] = qtys[id] - remaining;
 }
 
